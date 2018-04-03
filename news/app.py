@@ -7,9 +7,6 @@ import os
 import json 
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 from pymongo import MongoClient
 
 
@@ -19,11 +16,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@localhost/shiyanlou'
 db = SQLAlchemy(app)
 
-engine = create_engine('mysql://root:@localhost/shiyanlou')
-Session = sessionmaker(bind=engine)
-session = Session()
-client = MongoClient('127.0.0.1',27017)
-mdb = client.shiyanlou
+mdb = MongoClient('127.0.0.1',27017).shiyanlou
 
 
 
@@ -45,28 +38,42 @@ class File(db.Model):
         self.content = content
     
     def add_tag(self,tag_name):
-        tag = []
-        if self.tags:
+        file_item = mdb.file.find_one({'file_id':self.id})
+        if file_item:
+            tags = file_item['tags']
+            if tag_name not in tags:
+                tags.append(tag_name)
+            mdb.file.update_one({'file_id':self.id}, {'$set': {'tags': tags}})
             
-            tag.append(tag_name)
-            mdb.file.insert_one({'title':self.title,'tags': tag})
         else:
-            tag = self.tags
-            tag.append(tag_name)
-            mdb.file.update_one({'title':self.title}, {'$set': {'tags': tag}})
+            tags = [tag_name]
+            mdb.file.insert_one({'file_id':self.id,'tags': tags})
+        return tags
 
     def remove_tag(self,tag_name):
-        self.tags.pop(tag_name)
-        mdb.file.update_one({'title':self.title}, {'$set': {'tags': self.tags}})
+        file_item = mdb.file.find_one({'file_id':self.id})
+        if file_item:
+            tags = file_item['tags']
+            try:
+                tags.remove(tag_name)
+                new_tags = tags
+            except ValueError:
+                return tags
+            mdb.file.update_one({'file_id':self.id}, {'$set': {'tags': new_tags}})
+            return new_tags
+        return []
+        
+        
 
     @property
     def tags(self):
-        tmp = mdb.file.find_one({'title':self.title})
-        if tmp is None:
-            return []
+        tmp = mdb.file.find_one({'file_id':self.id})
+        if tmp:
+            print(tmp)
+            return tmp['tags']
         else:
-            tags = tmp['tags']  
-            return tags
+            return []
+            
 
 
     def __repr__(self):
@@ -75,6 +82,7 @@ class File(db.Model):
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80))
+    files = db.relationship('File')
     
 
     def __init__(self, name):
@@ -90,11 +98,7 @@ class Category(db.Model):
 
 @app.route('/')
 def index():
-    flist = session.query(File).all()
-    tags = []
-    tags.append(mdb.file.find_one({'title':flist[0]}))
-    tags.append(mdb.file.find_one({'title':flist[1]}))
-    return render_template('index.html',flist=flist,tags=tags)
+    return render_template('index.html',files=File.query.all())
 
 
 
@@ -106,10 +110,8 @@ def not_found(error):
 
 @app.route('/files/<file_id>')
 def file(file_id):
-    onefile = session.query(File).filter(File.id==file_id).first()
-    if onefile is None:
-        abort(404)
-    return render_template('file.html', onefile=onefile)
+    file_item = File.query.get_or_404(file_id)
+    return render_template('file.html', file_item=file_item)
 
 
 
