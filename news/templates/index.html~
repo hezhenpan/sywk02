@@ -1,3 +1,0 @@
-{% for file in flist %}
-<li><a href="/files/{{ file.id }}">{{ file.title }}</a></li>
-{% endfor %}
