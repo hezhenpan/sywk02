@@ -82,7 +82,7 @@ class File(db.Model):
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80))
-    files = db.relationship('File')
+    #files = db.relationship('File')
     
 
     def __init__(self, name):

@@ -1,19 +1,22 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8">
-    <title>Index</title>
-  </head>
-  <body>
-    <ul>
-     {% for file in files %}
-     <li>
-       <a href="{{ url_for('file', file_id=file.id) }}" target="_blank">{{ file.title }}</a>
+
+{% extends "base.html"%}
+
+{%block title%}Index{%endblock%}
+
+{%block content%}
+<ul class="list-group">
+
+{% for file in files %}
+     <li class="list-group-item">
+       <a href="{{ url_for('file', file_id=file.id) }}" target="_blank"><h2>{{ file.title }}</h2>
+	</a>
        {% for tag in file.tags %}
-         <span>{{ tag }}</span>
+         <span class="label lablel-success">{{ tag }}</span>
        {% endfor %}
      </li>
      {% endfor %}
-    </ul>
-  </body>
-</html>
+
+</ul>
+{%endblock%}
+
+
