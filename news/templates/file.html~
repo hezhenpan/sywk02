@@ -1,4 +1,0 @@
-<h1>title:{{onefile.title}}</h1>
-<p>created_time:{{onefile.created_time}}</p>
-<p>content:{{onefile.content}}</p>
-<p>category:{{onefile.category.name}}</p>
